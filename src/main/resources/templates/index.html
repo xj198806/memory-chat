@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head lang="en">
+    <meta charset="UTF-8" />
+    <title>java聊天室</title>
+</head>
+<link rel="stylesheet" href="/webjars/bootstrap/3.3.1/css/bootstrap.min.css"/>
+<script src="/webjars/jquery/2.1.3/dist/jquery.min.js"></script>
+<script src="/webjars/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+<script type="text/javascript">
+    /*<![CDATA[*/
+    if (!!window.EventSource) { //①
+        var source = new EventSource('play/push/words');
+
+        source.addEventListener('message', function(e) {//②
+            if (e.data != ""){
+                var wordList = $.parseJSON(e.data)
+                //alert(wordList.length);
+                var i;
+                var wordsHtml = "";
+                for (i=0; i < wordList.length;i++){
+                    wordsHtml += wordList[i]['memberName'] + " : " + wordList[i]['words']+"<br/>";
+                }
+                //alert(wordsHtml);
+                $("#msgFrompPush").html(wordsHtml);
+            }
+        });
+
+        source.addEventListener('open', function(e) {
+            console.log("连接打开.");
+        }, false);
+
+        source.addEventListener('error', function(e) {
+            if (e.readyState == EventSource.CLOSED) {
+                console.log("连接关闭");
+            } else {
+                console.log(e.readyState);
+            }
+        }, false);
+
+        /*var source1 = new EventSource('push/members');
+        ss='';
+        source1.addEventListener('message', function(e) {//②
+            ss+=e.data+"<br/>";
+            $("#msgFrompPush1").html(ss);
+
+        });
+
+        source1.addEventListener('open', function(e) {
+            console.log("连接打开.");
+        }, false);
+
+        source1.addEventListener('error', function(e) {
+            if (e.readyState == EventSource.CLOSED) {
+                console.log("连接关闭");
+            } else {
+                console.log(e.readyState);
+            }
+        }, false);*/
+
+        var source2 = new EventSource('play/push/groups');
+        source2.addEventListener('message', function(e) {//②
+            if (e.data != ""){
+                var memberList = $.parseJSON(e.data)
+                //alert(wordList.length);
+                var i;
+                var memberHtml = "成员：";
+                for (i=0; i < memberList.length;i++){
+                    memberHtml += memberList[i]['name'] + " ";
+                }
+                $("#msgFrompPush2").html(memberHtml);
+            }
+        });
+
+        source2.addEventListener('open', function(e) {
+            console.log("连接打开.");
+        }, false);
+
+        source2.addEventListener('error', function(e) {
+            if (e.readyState == EventSource.CLOSED) {
+                console.log("连接关闭");
+            } else {
+                console.log(e.readyState);
+            }
+        }, false);
+    } else {
+        console.log("你的浏览器不支持SSE");
+    }
+
+    var form = document.getElementById('form');
+    var form_chat = document.getElementById('form_chat');
+
+    function getCookie(c_name) {
+        if (document.cookie.length>0)
+        {
+            c_start=document.cookie.indexOf(c_name + "=");
+            if (c_start!=-1)
+            {
+                c_start=c_start + c_name.length+1;
+                c_end=document.cookie.indexOf(";",c_start);
+                if (c_end==-1) c_end=document.cookie.length;
+                return unescape(document.cookie.substring(c_start,c_end))
+            }
+        }
+        return ""
+    }
+
+    $(function () {
+        var userId = getCookie("user");
+        if (userId != ""){
+            $('#form').hide();
+            $('#form_chat').show();
+        }
+        $('#submit').click(function () {
+            var name = $('#name').val();
+            $.ajax({
+                type: 'post',
+                data:JSON.stringify({groupId: 1, name: name}),
+                contentType:'application/json',
+                url: '/play/joinGroup/1',
+                success: function(res) {
+                    //window.location.reload();
+                    $('#form').hide();
+                    $('#form_chat').show();
+                    userId = getCookie("user");
+                },
+                error: function() {
+                }
+            })
+        });
+
+        $('#submit2').click(function () {
+            var message = $('#message').val();
+            //alert("userId:"+userId);
+            $.post('/play/speak/1/'+userId,{message:message},function(result){
+                if (!result)
+                    window.location.reload();
+                else
+                    console.log('Sent!');
+            });
+        });
+
+        $(document).keydown(function(event){
+            if(event.keyCode == 13){
+                $('#submit2').click();
+            }
+        });
+    });
+
+
+
+    /*]]>*/
+</script>
+<body style="">
+    <h1 th:text="${host}">Hello World</h1>
+    <dev>
+        <form id="form" role="form">
+            请输入用户名：<input id="name" type="text" />
+           <!-- <input type="submit" value="Submit" />-->
+            <button id="submit" type="button">Submit</button>
+        </form>
+        <form id="form_chat" role="form" style="display: none">
+            请输入内容：<input id="message" type="text" />
+            <!-- <input type="submit" value="Submit" />-->
+            <button id="submit2" type="button">Submit</button>
+        </form>
+    </dev>
+    <div id="msgFrompPush2"></div>
+    <div>-------------------</div>
+    <div id="msgFrompPush1"></div>
+    <div id="msgFrompPush"></div>
+</body>
+</html>
